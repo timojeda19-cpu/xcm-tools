@@ -563,6 +563,28 @@ describe("DedotApi", () => {
       asset: { symbol: "DOT" } as WithAmount<TAssetInfo>,
     });
 
+    it("returns the explicit fee asset on Hydration without querying accountCurrencyMap", async () => {
+      const feeAsset = { symbol: "USDT" } as TAssetInfo;
+      const mappedAsset = { symbol: "USDC" } as TAssetInfo;
+      mockApiRaw.query.multiTransactionPayment.accountCurrencyMap.mockResolvedValueOnce(
+        "1001",
+      );
+      const findAssetInfoOrThrowSpy = vi
+        .spyOn(dedotApi, "findAssetInfoOrThrow")
+        .mockReturnValue(mappedAsset);
+
+      const result = await dedotApi.resolveFeeAsset({
+        ...createOptions(),
+        feeAsset,
+      });
+
+      expect(
+        mockApiRaw.query.multiTransactionPayment.accountCurrencyMap,
+      ).not.toHaveBeenCalled();
+      expect(findAssetInfoOrThrowSpy).not.toHaveBeenCalled();
+      expect(result).toEqual({ isCustomAsset: false, asset: feeAsset });
+    });
+
     it("returns native asset for non-Hydration chains", async () => {
       const nativeAsset = { symbol: "DOT" } as TAssetInfo;
       vi.spyOn(dedotApi, "findNativeAssetInfoOrThrow").mockReturnValue(
